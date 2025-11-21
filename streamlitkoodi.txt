@@ -1,0 +1,57 @@
+import streamlit as st
+import mysql.connector
+import pandas as pd
+from mysql.connector import Error
+
+
+DB_CONFIG = {
+    'host': 'localhost',
+    'database': 'tietokannan_nimi', 
+    'user': 'kayttajatunnus',
+    'password': 'salasana'
+}
+
+## 1. Tietokantayhteyden Luominen (Cached)
+
+@st.cache_resource
+def luo_yhteys(config):
+    """Luo ja palauttaa tietokantayhteyden. Suoritetaan vain kerran."""
+    try:
+        yhteys = mysql.connector.connect(**config)
+        return yhteys
+    except Error as e:
+        st.error(f"Virhe yhdistettäessä MySQL-tietokantaan. Tarkista asetukset: {e}")
+        return None
+
+db_yhteys = luo_yhteys(DB_CONFIG)
+
+---
+
+## 2. Datan Haku ja Näyttäminen 📊
+
+st.title("Vitutus-päiväkirjan analyysi (Vitutus Käyrä)")
+
+if db_yhteys and db_yhteys.is_connected():
+    try:
+
+        sql_kysely = "SELECT id, date, phase, level, comment FROM vitutus_käyrä ORDER BY date DESC;"
+        
+        # 2. Haetaan data suoraan Pandas DataFrameen
+        df = pd.read_sql(sql_kysely, db_yhteys)
+        
+        # 3. Näytetään tiedot taulukkona
+        st.subheader("Kaikki ladattu data: MySql tietokannasta")
+        st.dataframe(df, use_container_width=True)
+
+        # 4. Esimerkki visualisoinnista: Level-arvojen jakauma
+        st.subheader("Vitutustason (Level) jakauma")
+        # Muunnetaan 'level' numeeriseksi jos se on merkkijono ja lasketaan esiintymät
+        level_counts = df['level'].value_counts().sort_index()
+        st.bar_chart(level_counts)
+
+
+    except Exception as e:
+        st.error(f"Datan haku tai käsittely epäonnistui. SQL-virhe: {e}")
+        
+else:
+    st.warning("Tietokantayhteys epäonnistui. Tarkista tietokanta-asetukset (host, user, password, database).")

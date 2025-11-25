@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+import requests
+import mysql.connector
+from datetime import datetime
+
+DB_HOST = "localhost"
+DB_USER = "ubuntu"
+DB_PASSWORD = "vittusaatana123!"
+DB_NAME = "streamlit"
+
+headers = {
+    "Accept": "application/json",
+    "User-Agent": "MyJokeFetcher/1.0"
+}
+
+response = requests.get("https://icanhazdadjoke.com/", headers=headers)
+data = response.json()
+joke = data["joke"]
+joke_id = data["id"]
+timestamp = datetime.now()
+
+conn = mysql.connector.connect(
+    host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME
+)
+cursor = conn.cursor()
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS jokes (
+        id VARCHAR(50) PRIMARY KEY,
+        joke TEXT,
+        timestamp DATETIME
+    )
+""")
+cursor.execute("""
+    INSERT INTO jokes (id, joke, timestamp)
+    VALUES (%s, %s, %s)
+    ON DUPLICATE KEY UPDATE joke = %s, timestamp = %s
+""", (joke_id, joke, timestamp, joke, timestamp))
+conn.commit()
+cursor.close()
+conn.close()
+
+print("Joke tallennettu:", joke)

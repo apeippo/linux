@@ -1,0 +1,18 @@
+  GNU nano 7.2                                                        fetch_weather.sh
+#!/bin/bash
+
+# Mene oikeaan hakemistoon
+cd /home/ubuntu/cron_assignment
+
+# Aktivoi virtuaaliympäristö
+source venv/bin/activate
+
+# Asenna riippuvuudet (vain jos haluat)
+pip install --upgrade pip
+pip install -r /home/ubuntu/cron_assignment/requirements.txt
+
+# Suorita sääskripti
+echo "===== Käynnistetään säähaku $(date) =====" >> /home/ubuntu/cron_assignment/weather_cron.log
+python3 /home/ubuntu/cron_assignment/fetch_weather.py >> /home/ubuntu/cron_assignment/weather_cron.log 2>&1
+echo "===== Valmis =====" >> /home/ubuntu/cron_assignment/weather_cron.log
+echo "" >> /home/ubuntu/cron_assignment/weather_cron.log

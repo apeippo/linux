@@ -1,0 +1,12 @@
+#!/bin/bash
+
+
+source /home/ubuntu/cron_assignment/venv/bin/activate
+
+
+python /home/ubuntu/cron_assignment/fetch_jokes.py
+
+
+
+
+

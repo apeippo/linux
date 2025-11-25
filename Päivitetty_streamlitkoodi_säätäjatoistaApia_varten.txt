@@ -1,0 +1,91 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from sqlalchemy import create_engine
+
+DB_USER = "ubuntu"
+DB_PASSWORD = ""
+DB_NAME = "streamlit"
+DB_HOST = "localhost"
+
+
+@st.cache_resource
+def create_engine_cached():
+    try:
+        conn_string = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+        return create_engine(conn_string)
+    except Exception as e:
+        st.error(f"Virhe tietokantayhteyden luonnissa: {e}")
+        return None
+
+engine = create_engine_cached()
+
+
+st.title("Vitutus-päiväkirjan analyysi (Vitutus Käyrä)")
+
+if engine:
+    try:
+        sql_query = "SELECT id, date, phase, level, comment FROM vitutus_kayra ORDER BY date DESC;"
+        df = pd.read_sql(sql_query, engine)
+
+        st.subheader("Kaikki ladattu data MySQL tietokannasta:")
+        st.dataframe(df, width="stretch")
+
+        st.subheader("Vitutustason (Level) jakauma")
+        level_counts = df['level'].value_counts().sort_index()
+        st.bar_chart(level_counts)
+
+    except Exception as e:
+        st.error(f"Datan haku epäonnistui: {e}")
+else:
+    st.warning("Tietokantayhteys epäonnistui. Tarkista asetukset.")
+
+
+st.title("Tuusulan säädata")
+
+@st.cache_data(ttl=900)
+def load_weather(_engine):
+    return pd.read_sql(
+        "SELECT id, city, temperature, description, timestamp FROM weather_data ORDER BY timestamp DESC LIMIT 50",
+        _engine
+    )
+
+if engine:
+    try:
+        df_weather = load_weather(engine)
+        st.subheader("Viimeisimmät säämittaukset:")
+        st.dataframe(df_weather)
+
+        st.subheader("Lämpötilatrendi")
+        fig = px.line(df_weather, x="timestamp", y="temperature", title="Tuusulan lämpötila")
+        st.plotly_chart(fig)
+
+    except Exception as e:
+        st.error(f"Säädatan haku epäonnistui: {e}")
+else:
+    st.warning("Tietokantayhteys epäonnistui. Tarkista asetukset.")
+
+
+st.title("Dad Jokes")
+
+@st.cache_data(ttl=900)
+def load_jokes(_engine):
+    return pd.read_sql(
+        "SELECT * FROM jokes ORDER BY timestamp DESC LIMIT 50",
+        _engine
+    )
+
+if engine:
+    try:
+        df_jokes = load_jokes(engine)
+        st.subheader("Viimeisimmät vitsit:")
+        st.dataframe(df_jokes)
+
+        st.subheader("Satunnainen vitsi")
+        if not df_jokes.empty:
+            st.write(df_jokes.sample(1)['joke'].values[0])
+
+    except Exception as e:
+        st.error(f"Vitsidatan haku epäonnistui: {e}")
+else:
+    st.warning("Tietokantayhteys epäonnistui. Tarkista asetukset.")

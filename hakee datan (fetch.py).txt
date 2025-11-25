@@ -1,0 +1,66 @@
+  GNU nano 7.2                                                        fetch_weather.py
+#!/usr/bin/env python3
+import requests
+import mysql.connector
+from datetime import datetime
+
+API_KEY = ''
+CITY = 'Tuusula'
+URL = f'https://api.openweathermap.org/data/2.5/weather?q=Tuusula&appid=apiavain&units=metric'
+
+
+conn = mysql.connector.connect(
+    host='localhost',
+    user='ubuntu',
+    password='',
+    database='streamlit'
+)
+
+cursor = conn.cursor()
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS weather_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    city VARCHAR(50),
+    temperature FLOAT,
+    description VARCHAR(100),
+    timestamp DATETIME
+)
+''')
+
+# Hae viimeisin tallennettu timestamp
+cursor.execute("SELECT timestamp FROM weather_data WHERE city=%s ORDER BY timestamp DESC LIMIT 1", (CITY,))
+last_row = cursor.fetchone()
+
+# Hae uusin säädata API:sta
+response = requests.get(URL)
+data = response.json()
+temp = data['main']['temp']
+desc = data['weather'][0]['description']
+timestamp = datetime.now()
+
+# Lisää vain, jos viimeisestä mittauksesta yli 15 min
+if last_row is None or (timestamp - last_row[0]) >= timedelta(minutes=15):
+    cursor.execute(
+        'INSERT INTO weather_data (city, temperature, description, timestamp) VALUES (%s, %s, %s, %s)',
+        (CITY, temp, desc, timestamp)
+    )
+    conn.commit()
+    print(f'Data tallennettu: {CITY} {temp}°C {desc}')
+else:
+    print("Viimeisestä mittauksesta ei ole kulunut 15 minuuttia, ei lisätä uutta riviä.")
+
+cursor.close()
+conn.close()
+
+
+
+
+
+
+
+
+
+
+
+
+

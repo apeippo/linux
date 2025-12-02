@@ -1,0 +1,20 @@
+from flask import Flask, request, jsonify
+import mysql.connector
+
+app = Flask(__name__)
+
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="PASSWORD",
+    database="mqtt_chat"
+)
+
+@app.route("/api/messages")
+def get_messages():
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT nickname, message FROM messages ORDER BY created_at DESC LIMIT 10")
+    return jsonify(cur.fetchall())
+
+if __name__ == "__main__":
+    app.run(port=5050)

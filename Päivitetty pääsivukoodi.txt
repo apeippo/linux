@@ -1,0 +1,84 @@
+from flask import Flask, render_template_string
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    html = """
+    <!-- Cyberpunk dashboard HTML (lyhennetty tilan vuoksi, mutta sisältää täyden layoutin) -->
+    <!DOCTYPE html>
+    <html lang="fi">
+    <head>
+        <meta charset="UTF-8">
+        <title>Cyberpunk Control Panel</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: radial-gradient(circle at top, #102040, #050816 70%);
+                color: #fff;
+            }
+
+            /* NAVBAR */
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                padding: 12px 30px;
+                background: #050f2b;
+                border-bottom: 1px solid #00eaff;
+            }
+            .nav-links a {
+                color: #00eaff;
+                margin-left: 20px;
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+            /* BUTTONS */
+            .btn {
+                padding: 10px 16px;
+                background: #0a2540;
+                border: 1px solid #009dff;
+                border-radius: 8px;
+                color: #fff;
+                display: inline-block;
+                margin: 10px;
+                text-decoration: none;
+            }
+        </style>
+    </head>
+
+    <body>
+
+    <div class="navbar">
+        <div class="logo">CYBERPUNK NODE</div>
+        <div class="nav-links">
+            <a href="/chat" target="_blank"><i class="fa-solid fa-comments"></i> Chat</a>
+            <a href="/api/messages" target="_blank"><i class="fa-solid fa-database"></i> Messages</a>
+            <a href="/data-analysis/" target="_blank"><i class="fa-solid fa-chart-line"></i> Data Analysis</a>
+            <a href="https://github.com/YOUR_REPO" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
+        </div>
+    </div>
+
+    <h1 style='margin:30px;'>Cyberpunk Dashboard</h1>
+
+    <p>Suomen aika: <span id="clock">--:--:--</span></p>
+
+    <script>
+        function updateClock() {
+            const options = {"timeZone": "Europe/Helsinki", "hour12": false};
+            const now = new Date().toLocaleTimeString('fi-FI', options);
+            document.getElementById('clock').textContent = now;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+
+    </body>
+    </html>
+    """
+    return render_template_string(html)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)

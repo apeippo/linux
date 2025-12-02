@@ -1,0 +1,30 @@
+server {
+    listen 80;
+    server_name 86.50.22.169;
+
+    # Main Cyberpunk dashboard (Flask)
+    location / {
+        proxy_pass http://127.0.0.1:5000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Streamlit
+    location /data-analysis/ {
+        proxy_pass http://127.0.0.1:8501/;
+        proxy_set_header Host $host;
+    }
+
+    # Chat HTML
+    location /chat {
+        alias /var/www/html/chat/index.html;
+    }
+
+    # MQTT WebSocket
+    location /mqtt {
+        proxy_pass http://127.0.0.1:9001/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

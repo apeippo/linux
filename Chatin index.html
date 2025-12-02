@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8" />
+<title>Yksinäisten sinkkujen Chat</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #25002e, #4b0039);
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+
+/* BACK BUTTON */
+.navbar {
+    width: 100%;
+    padding: 12px 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.nav-link {
+    color: #ff77e9;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* CHAT WINDOW */
+#messages {
+    width: 90%;
+    max-width: 500px;
+    height: 320px;
+    margin: auto;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    overflow-y: scroll;
+}
+
+.input-row {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+input { padding: 10px; border-radius: 6px; border: none; }
+button { padding:10px 16px; background:#ff3dc1; color:#fff; border:none; border-radius:8px; }
+.message-bubble { margin-bottom:8px; padding:8px 12px; background:rgba(255,255,255,0.2); border-radius:10px; }
+.me { background: rgba(255, 94, 170, 0.35); margin-left: auto; }
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <a href="/" class="nav-link">⬅ Takaisin pääsivulle</a>
+</div>
+
+<h2>💖 Yksinäisten sinkkujen Chat 💖</h2>
+
+<div id="messages"></div>
+
+<div class="input-row">
+  <input id="name" placeholder="Nimi">
+  <input id="msg" placeholder="Viesti" onkeydown="checkEnter(event)">
+  <button onclick="send()">Lähetä</button>
+</div>
+
+<script>
+const myId = Math.random().toString(36).substring(2,9);
+
+function checkEnter(e){ if(e.key==="Enter") send(); }
+
+fetch("/api/messages")
+  .then(r=>r.json())
+  .then(msgs=>msgs.forEach(m=>append(m.nickname+": "+m.message)));
+
+const client = mqtt.connect("ws://" + location.hostname + "/mqtt");
+
+client.on("connect", () => {
+  append("💚 Yhdistetty chattiin");
+  client.subscribe("chat/messages");
+});
+
+client.on("message", (topic, payload) => {
+  const d = JSON.parse(payload.toString());
+  if (d.clientId === myId) return;
+  append(d.nickname + ": " + d.text);
+});
+
+function send(){
+  let n = document.getElementById("name").value;
+  let t = document.getElementById("msg").value;
+  if(!n || !t) return;
+
+  client.publish("chat/messages", JSON.stringify({
+    nickname: n,
+    text: t,
+    clientId: myId
+  }));
+
+  append(n + ": " + t, true);
+  document.getElementById("msg").value = "";
+}
+
+function append(text, me){
+  let box = document.getElementById("messages");
+  let div = document.createElement("div");
+  div.className = "message-bubble" + (me ? " me" : "");
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+</script>
+
+</body>
+</html>

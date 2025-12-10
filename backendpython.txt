@@ -1,0 +1,81 @@
+from flask import Flask
+from flask_cors import CORS
+import mysql.connector
+import os
+import threading
+import time
+from datetime import datetime
+import pytz
+
+app = Flask(__name__)
+CORS(app)
+
+# --- 1. Funktio joka päivittää tietokannan ajan ---
+def update_clock_loop():
+    while True:
+        try:
+            conn = mysql.connector.connect(
+                host=os.getenv("DB_HOST"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASS"),
+                database=os.getenv("DB_NAME"),
+                auth_plugin="mysql_native_password"
+            )
+            cursor = conn.cursor()
+
+            # Suomen aikavyöhyke
+            now_fi = datetime.now(pytz.timezone("Europe/Helsinki"))
+            formatted_time = now_fi.strftime("%H:%M:%S")   # STRING, ei timedeltaa!
+
+            cursor.execute("INSERT INTO clock (current_time) VALUES (%s)", (formatted_time,))
+            conn.commit()
+
+            cursor.close()
+            conn.close()
+
+            print("Tallennettu aika:", formatted_time)
+
+        except Exception as e:
+            print("Virhe kellon päivittämisessä:", e)
+
+        time.sleep(5)  # 5 sekunnin välein
+
+
+# --- 2. Flask endpoint joka palauttaa ajan ---
+@app.route("/time")
+def get_time():
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASS"),
+            database=os.getenv("DB_NAME"),
+            auth_plugin="mysql_native_password"
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT current_time FROM clock ORDER BY id DESC LIMIT 1")
+        result = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if result:
+            return str(result[0])   # <-- TÄRKEÄ: MUUTETAAN STRINGIKSI
+
+        return "Ei aikaa"
+
+    except Exception as e:
+        return str(e)
+
+
+@app.route("/")
+def home():
+    return "Flask backend toimii Kubernetesissa!"
+
+
+# --- 3. Käynnistä kellon päivitys taustalla ---
+threading.Thread(target=update_clock_loop, daemon=True).start()
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)

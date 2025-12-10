@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kubernetes Frontend</title>
+</head>
+<body>
+    <h1>Frontend toimii Kubernetesissa!</h1>
+
+    <p>Backendin tervehdys:</p>
+    <div id="greeting">Ladataan...</div>
+
+    <p>MySQL-kellonaika:</p>
+    <div id="clock">Ladataan...</div>
+
+    <script>
+        // Backendin tervehdys (/ endpoint)
+        function updateGreeting() {
+            fetch("http://86.50.22.169:30001/")
+                .then(res => res.text())
+                .then(text => document.getElementById("greeting").innerText = text)
+                .catch(() => document.getElementById("greeting").innerText = "Backend ei vastaa");
+        }
+
+        // Kellonaika
+        function updateClock() {
+            fetch("http://86.50.22.169:30001/time")
+                .then(res => res.text())
+                .then(text => document.getElementById("clock").innerText = text)
+                .catch(() => document.getElementById("clock").innerText = "Virhe kellon hakemisessa");
+        }
+
+        // Käynnistä
+        updateGreeting();
+        updateClock();
+        setInterval(updateClock, 5000);
+    </script>
+
+</body>
+</html>
